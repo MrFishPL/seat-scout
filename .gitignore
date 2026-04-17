@@ -212,3 +212,4 @@ __marimo__/
 # Throwaway debug scripts used during development
 test_*.py
 probe_*.py
+take_shots.py

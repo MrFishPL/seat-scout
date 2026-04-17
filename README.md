@@ -11,6 +11,35 @@ train, shows you the stops on your leg, and hands you a little walking plan:
 the 5–10 seats most likely to stay yours the longest — plus a couple that
 open up after 1–2 stops (for when you're feeling patient).
 
+## The tour 👀
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <b>1 · Find your train</b><br/>
+      <sub>Any combo of from / to / date / time / number works.</sub><br/>
+      <img src="docs/screens/01-search.png" alt="Search form with Kraków Główny → Poznań Główny 08:39" />
+    </td>
+    <td align="center" width="50%">
+      <b>2 · Pick the right one</b><br/>
+      <sub>Matching IC / TLK / EIC / EIP trains, as ticket-stubs.</sub><br/>
+      <img src="docs/screens/02-journeys.png" alt="Single matching Zefir journey card" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <b>3 · Pick your leg</b><br/>
+      <sub>Tap any stop to move your boarding point. Destination stays locked.</sub><br/>
+      <img src="docs/screens/03-leg.png" alt="Full stop list with Kraków as start and Poznań locked as end" />
+    </td>
+    <td align="center" width="50%">
+      <b>4 · Walk the plan</b><br/>
+      <sub>Free-now seats plus amber "soon" ones that open in 1–2 stops.</sub><br/>
+      <img src="docs/screens/04-seats.png" alt="Seat recommendations in carriage 15 with durations and soon badges" />
+    </td>
+  </tr>
+</table>
+
 ## Run it
 
 ```bash
