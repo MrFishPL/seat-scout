@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="g" cx="32" cy="20" r="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1b4a73"/>
+      <stop offset="1" stop-color="#0a1f33"/>
+    </radialGradient>
+    <linearGradient id="rail" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#f6f2ea" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#f6f2ea" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#f6f2ea" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Ticket body (rounded square rather than circle for a more distinctive silhouette) -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g)"/>
+  <!-- Subtle ticket-stub perforation on the right edge -->
+  <g fill="#f6f2ea" opacity=".18">
+    <circle cx="62" cy="18" r="2"/>
+    <circle cx="62" cy="32" r="2"/>
+    <circle cx="62" cy="46" r="2"/>
+  </g>
+  <!-- Train face: twin windows with headlight glow below -->
+  <g>
+    <rect x="14" y="16" width="36" height="24" rx="5" fill="none" stroke="#f6f2ea" stroke-width="2.4"/>
+    <line x1="32" y1="16" x2="32" y2="40" stroke="#f6f2ea" stroke-width="2.4"/>
+    <!-- Headlights / porthole dots -->
+    <circle cx="20" cy="48" r="2.2" fill="#d8973c"/>
+    <circle cx="44" cy="48" r="2.2" fill="#d8973c"/>
+  </g>
+  <!-- Track slash across the bottom -->
+  <rect x="8" y="54" width="48" height="2" fill="url(#rail)"/>
+</svg>
