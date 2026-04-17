@@ -696,7 +696,10 @@
     }
 
     state.date = dateV;
-    state.lockStart = Boolean(fromV);
+    // The start stop is always adjustable — users often board at a station
+    // different from what's printed on the ticket (mid-route boarding, etc).
+    // Only the destination is fixed when explicitly searched for.
+    state.lockStart = false;
     state.lockEnd = Boolean(toV);
     showLoading('Searching trains…', 'Querying the PKP Intercity timetable');
 
@@ -804,6 +807,7 @@
       state.lastSeats = null;
       updateBreadcrumb(3);
       renderStopPicker();
+      updateSeatsButton();
     } catch {
       clearLive();
       showError('Network error', "Couldn't reach the server.");
@@ -895,6 +899,10 @@
       }
     }
     renderStopPicker();
+    updateSeatsButton();
+  }
+
+  function updateSeatsButton() {
     $('#go-seats').disabled = !(state.startIndex != null && state.endIndex != null);
   }
 
