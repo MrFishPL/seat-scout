@@ -128,17 +128,95 @@ def _display_name(train: dict[str, Any]) -> str | None:
 
 # ---------- stop timeline construction --------------------------------------
 
+async def _station_lookup_by_id(
+    client: KoleoAPI,
+    station_ids: list[int],
+) -> dict[int, dict[str, Any]]:
+    unique_ids = list(dict.fromkeys(station_ids))
+    stations = await asyncio.gather(
+        *(client.get_station_by_id(station_id) for station_id in unique_ids),
+        return_exceptions=True,
+    )
+    lookup: dict[int, dict[str, Any]] = {}
+    for station_id, station in zip(unique_ids, stations):
+        if isinstance(station, Exception):
+            continue
+        lookup[station_id] = station
+    return lookup
+
+
+async def _detail_from_realtime_timetable(
+    client: KoleoAPI,
+    train_id: int,
+    base_date: datetime,
+) -> dict[str, Any]:
+    timetable = await client.realtime_train_timetable(
+        train_id,
+        base_date.strftime("%Y-%m-%d"),
+    )
+    stop_lookup = await _station_lookup_by_id(
+        client,
+        [s["station_id"] for s in timetable.get("stops") or []],
+    )
+    stops = []
+    for stop in timetable.get("stops") or []:
+        station = stop_lookup.get(stop["station_id"], {})
+        station_name = (
+            station.get("localised_name")
+            or station.get("name")
+            or f"Station {stop['station_id']}"
+        )
+        stops.append({
+            **stop,
+            "station_name": station_name,
+            "station_display_name": station_name,
+            "station_slug": station.get("name_slug") or "",
+            "position": len(stops),
+        })
+
+    return {
+        "train": {
+            "id": train_id,
+            "train_nr": timetable.get("train_nr"),
+            "train_full_name": timetable.get("train_full_name"),
+            "name": None,
+            "brand_id": timetable.get("commercial_brand_id"),
+        },
+        "stops": stops,
+    }
+
+
+async def _load_train_detail(
+    client: KoleoAPI,
+    train_id: int,
+    base_date: datetime,
+) -> dict[str, Any]:
+    try:
+        return await client.get_train(train_id)
+    except koleo_errors.KoleoAPIException as e:
+        try:
+            return await _detail_from_realtime_timetable(client, train_id, base_date)
+        except koleo_errors.KoleoAPIException:
+            pass
+        raise SeatFinderError(
+            f"Koleo no longer exposes the timetable for this train "
+            f"(HTTP {e.status}). Try choosing the train again from search results."
+        ) from e
+
+
 async def _route_stops(
     client: KoleoAPI,
     train_id: int,
     from_station_id: int | None,
     to_station_id: int | None,
     base_date: datetime,
+    detail: dict[str, Any] | None = None,
 ) -> list[Stop]:
     """Reconstruct a consistent, monotonically-increasing stop timeline for a
     train, then optionally slice to the requested from/to leg.
     """
-    detail = await client.get_train(train_id)
+    if detail is None:
+        detail = await _load_train_detail(client, train_id, base_date)
     raw_stops = detail["stops"]
 
     def dep_or_arr(s: dict[str, Any], which: str) -> datetime | None:
@@ -170,8 +248,12 @@ async def _route_stops(
         normalized.append(
             Stop(
                 station_id=s["station_id"],
-                station_name=s.get("station_display_name") or s["station_name"],
-                station_slug=s["station_slug"],
+                station_name=(
+                    s.get("station_display_name")
+                    or s.get("station_name")
+                    or f"Station {s['station_id']}"
+                ),
+                station_slug=s.get("station_slug") or "",
                 position=s["position"],
                 arrival_dt=arr,
                 departure_dt=dep,
@@ -730,8 +812,15 @@ async def get_train_stops(
     date: datetime,
 ) -> dict[str, Any]:
     """Return the full stop timeline for a train on a given operating day."""
-    detail = await client.get_train(train_id)
-    stops = await _route_stops(client, train_id, None, None, date)
+    detail = await _load_train_detail(client, train_id, date)
+    stops = await _route_stops(
+        client,
+        train_id,
+        None,
+        None,
+        date,
+        detail=detail,
+    )
     train = detail["train"]
     brand_id = train.get("brand_id")
     return {
@@ -764,7 +853,7 @@ async def find_seats_by_train(
 ) -> dict[str, Any]:
     """Seat recommendations for a specific train with explicit from/to."""
     try:
-        detail = await client.get_train(train_id)
+        detail = await _load_train_detail(client, train_id, date)
         train = detail["train"]
         brand_id = train.get("brand_id")
         if not _brand_ok(brand_id):
@@ -775,7 +864,12 @@ async def find_seats_by_train(
         train_nr = train.get("train_nr")
 
         stops = await _route_stops(
-            client, train_id, from_station_id, to_station_id, date
+            client,
+            train_id,
+            from_station_id,
+            to_station_id,
+            date,
+            detail=detail,
         )
         if len(stops) < 2:
             raise SeatFinderError("Couldn't rebuild this train's route.")
